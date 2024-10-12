@@ -16,6 +16,7 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 from transformers import BertTokenizer, BertForSequenceClassification
 from dotenv import load_dotenv
+from datetime import datetime,timedelta
 
 # Load the environment variables from .env file
 load_dotenv()
@@ -31,6 +32,8 @@ genai.configure(api_key=os.environ.get("GEMINI_KEY"))
 sentiment_model_name = 'nlptown/bert-base-multilingual-uncased-sentiment'
 sentiment_tokenizer = BertTokenizer.from_pretrained(sentiment_model_name)
 sentiment_model = BertForSequenceClassification.from_pretrained(sentiment_model_name)
+import finnhub
+finnhub_client = finnhub.Client(api_key=os.environ.get("MARKET_KEY"))
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -105,25 +108,30 @@ def predict_sentiment(text):
     return 'positive' if predicted_class > 2 else 'negative'
 
 def get_news_headlines(stock_symbol):
-    api_key = "marketaux_api"  # Your actual API key
-    url = f"https://api.marketaux.com/v1/news/all?symbols={stock_symbol}&api_token={os.environ.get("MARKET_KEY")}"
-
     try:
-        response = requests.get(url)
-        response.raise_for_status()  # This will raise an exception for HTTP errors
-        data = response.json()
-        return [article['title'] for article in data['data']]
-    except requests.exceptions.HTTPError as e:
-        print(f"HTTP error occurred: {e}")
-        if response.status_code == 401:
-            print("This may be due to an invalid API key or authentication issue.")
-    except requests.exceptions.RequestException as e:
-        print(f"An error occurred while making the request: {e}")
-    except KeyError as e:
-        print(f"Unexpected data format: {e}")
-        print(f"Response content: {response.text}")
+        to_date = datetime.today().strftime('%Y-%m-%d')
+        from_date = (datetime.now() - timedelta(days=120)).strftime("%Y-%m-%d")
+        new_response = finnhub_client.company_news(stock_symbol, _from=from_date, to=to_date)
+        headlines = [article['headline'] for article in new_response[:15]]
+    except:
+        print("error")
 
-    return []
+    # try:
+    #     response = requests.get(url)
+    #     response.raise_for_status()  # This will raise an exception for HTTP errors
+    #     data = response.json()
+    #     return [article['title'] for article in data['data']]
+    # except requests.exceptions.HTTPError as e:
+    #     print(f"HTTP error occurred: {e}")
+    #     if response.status_code == 401:
+    #         print("This may be due to an invalid API key or authentication issue.")
+    # except requests.exceptions.RequestException as e:
+    #     print(f"An error occurred while making the request: {e}")
+    # except KeyError as e:
+    #     print(f"Unexpected data format: {e}")
+    #     print(f"Response content: {response.text}")
+    
+    return headlines
 
 @app.post("/analyze-sentiment")
 async def analyze_sentiment(request: SentimentRequest):

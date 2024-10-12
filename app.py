@@ -112,7 +112,7 @@ def get_news_headlines(stock_symbol):
         to_date = datetime.today().strftime('%Y-%m-%d')
         from_date = (datetime.now() - timedelta(days=120)).strftime("%Y-%m-%d")
         new_response = finnhub_client.company_news(stock_symbol, _from=from_date, to=to_date)
-        headlines = [article['headline'] for article in new_response[:15]]
+        headlines = [article['headline'] for article in new_response[-15:]]
     except:
         print("error")
 

@@ -17,6 +17,7 @@ from firebase_admin import firestore
 from transformers import BertTokenizer, BertForSequenceClassification
 from dotenv import load_dotenv
 from datetime import datetime,timedelta
+from fastapi.middleware.cors import CORSMiddleware
 
 # Load the environment variables from .env file
 load_dotenv()
@@ -37,6 +38,13 @@ finnhub_client = finnhub.Client(api_key=os.environ.get("MARKET_KEY"))
 
 # Initialize FastAPI app
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class ChatRequest(BaseModel):
     message: str
@@ -132,6 +140,11 @@ def get_news_headlines(stock_symbol):
     #     print(f"Response content: {response.text}")
     
     return headlines
+@app.get("/stock/{symbol}")
+def get_stock_data(symbol: str):
+    stock = yf.Ticker(symbol)
+    history = stock.history(period="1mo")  # Fetch stock price data for the last month
+    return history["Close"].to_dict() 
 
 @app.post("/analyze-sentiment")
 async def analyze_sentiment(request: SentimentRequest):

@@ -50,19 +50,19 @@ class ChatRequest(BaseModel):
     message: str
 
 generation_config = {
-  "temperature": 1,
+  "temperature": 0.95,
   "top_p": 0.95,
   "top_k": 64,
   "max_output_tokens": 8192,
   "response_mime_type": "text/plain",
 }
+
 model = genai.GenerativeModel(
   model_name="gemini-1.5-flash",
   generation_config=generation_config,
-  # safety_settings = Adjust safety settings
-  # See https://ai.google.dev/gemini-api/docs/safety-settings
-  system_instruction="\"\"\"\n\n    You are an AI assistant that processes financial statements. Given a user input text, you need to extract the following information for each transaction mentioned:\n\n    1. Intent: The action or purpose of the user's statement (e.g., \"AddExpense\", \"ViewExpenses\", \"CheckBalance\").\n    2. Amount: The amount of money mentioned in the transaction (e.g., \"$50\", \"200\").\n    3. Category: The category of the expense (e.g., \"Groceries\", \"Electronics\", \"Rent\").\n    4. Note: The original user input text.\n    5. Timestamp: The current date and time in ISO 8601 format.\n\n    For each transaction in the input text, respond with a JSON object. If multiple transactions are mentioned, return a list of JSON objects. Here is an example JSON structure:\n\n    Example Inputs and Expected Outputs:\n\n    1. Input: \"I spent $50 on groceries and $20 on coffee.\"\n       - Output: [\n           {{\n               \"user_id\": 1,\n               \"amount\": \"50\",\n               \"credit_or_debit\": \"Debit\",\n               \"category\": \"Groceries\",\n               \"note\": \"I spent $50 on groceries.\",\n               \"timestamp\": \"2024-08-27T03:18:41Z\",\n               \"intent\": \"AddExpense\"\n           }},\n           {{\n               \"user_id\": 1,\n               \"amount\": \"20\",\n               \"credit_or_debit\": \"Debit\",\n               \"category\": \"Coffee\",\n               \"note\": \"I spent $20 on coffee.\",\n               \"timestamp\": \"2024-08-27T03:18:41Z\",\n               \"intent\": \"AddExpense\"\n           }}\n       ]\n\n    2. Input: \"I spent 50 on a pen and 20 on noodles.\"\n       - Output: [\n           {{\n               \"user_id\": 1,\n               \"amount\": \"50\",\n               \"credit_or_debit\": \"Debit\",\n               \"category\": \"Stationery\",\n               \"note\": \"I spent 50 on a pen.\",\n               \"timestamp\": \"2024-08-27T03:18:41Z\",\n               \"intent\": \"AddExpense\"\n           }},\n           {{\n               \"user_id\": 1,\n               \"amount\": \"20\",\n               \"credit_or_debit\": \"Debit\",\n               \"category\": \"Food\",\n               \"note\": \"I spent 20 on noodles.\",\n               \"timestamp\": \"2024-08-27T03:18:41Z\",\n               \"intent\": \"AddExpense\"\n           }}\n       ]\n\n    3. Input: \"Show me my expenses for this month.\"\n       - Output: {\n           \"user_id\": 1,\n           \"amount\": null,\n           \"credit_or_debit\": null,\n           \"category\": null,\n           \"note\": \"Show me my expenses for this month.\",\n           \"timestamp\": \"2024-08-27T03:18:41Z\",\n           \"intent\": \"ViewExpenses\"\n       }\n\n       The response must contain text of that format only.\n\n    \"\"\"",
+  system_instruction="You are an AI assistant that processes financial statements. Given a user input text, you need to extract the following information for each transaction mentioned:\n\n    1. Intent: The action or purpose of the user's statement (e.g., \"AddExpense\", \"ViewExpenses\", \"CheckBalance\").\n    2. Amount: The amount of money mentioned in the transaction (e.g., \"$50\", \"200\").\n    3. Category: The category of the expense (e.g., \"Groceries\", \"Electronics\", \"Rent\").\n    4. Note: The original user input text.\n    5. Timestamp: The current date and time in ISO 8601 format.\n\n    For each transaction in the input text, respond with a JSON object. If multiple transactions are mentioned, return a list of JSON objects. Here is an example JSON structure:\n\n    Example Inputs and Expected Outputs:\n\n    1. Input: \"I spent $50 on groceries and $20 on coffee.\"\n       - Output: [\n           {{\n               \"user_id\": 1,\n               \"amount\": \"50\",\n               \"credit_or_debit\": \"Debit\",\n               \"category\": \"Groceries\",\n               \"note\": \"I spent $50 on groceries.\",\n               \"timestamp\": \"2024-08-27T03:18:41Z\",\n               \"intent\": \"AddExpense\"\n           }},\n           {{\n               \"user_id\": 1,\n               \"amount\": \"20\",\n               \"credit_or_debit\": \"Debit\",\n               \"category\": \"Coffee\",\n               \"note\": \"I spent $20 on coffee.\",\n               \"timestamp\": \"2024-08-27T03:18:41Z\",\n               \"intent\": \"AddExpense\"\n           }}\n       ]\n\n    2. Input: \"I spent 50 on a pen and 20 on noodles.\"\n       - Output: [\n           {{\n               \"user_id\": 1,\n               \"amount\": \"50\",\n               \"credit_or_debit\": \"Debit\",\n               \"category\": \"Stationery\",\n               \"note\": \"I spent 50 on a pen.\",\n               \"timestamp\": \"2024-08-27T03:18:41Z\",\n               \"intent\": \"AddExpense\"\n           }},\n           {{\n               \"user_id\": 1,\n               \"amount\": \"20\",\n               \"credit_or_debit\": \"Debit\",\n               \"category\": \"Food\",\n               \"note\": \"I spent 20 on noodles.\",\n               \"timestamp\": \"2024-08-27T03:18:41Z\",\n               \"intent\": \"AddExpense\"\n           }}\n       ]\n\n    3. Input: \"Show me my expenses for this month.\"\n       - Output: {\n           \"user_id\": 1,\n           \"amount\": null,\n           \"credit_or_debit\": null,\n           \"category\": null,\n           \"note\": \"Show me my expenses for this month.\",\n           \"timestamp\": \"2024-08-27T03:18:41Z\",\n           \"intent\": \"ViewExpenses\"\n       }\n\n       The response must contain text of that format only.",
 )
+
 chat = model.start_chat(history=[])
 
 @app.post("/chat")
@@ -71,16 +71,17 @@ async def chat_endpoint(request: ChatRequest):
     
     try:
         # Send the message to the model and collect the streamed response
-        response = chat.send_message(user_message, stream=True)
+        response = chat.send_message(user_message)
+        print(response.text)
         
         # Collect all chunks from the streamed response
         current = ""
         for chunk in response:
             if chunk.text:
                 current += chunk.text
-        
+
         # Attempt to parse the final JSON output
-        jsonstr = json.loads(current)  # Modify this as needed based on the structure of `current`.
+        jsonstrs = json.loads(response.text)  # Modify this as needed based on the structure of `current`.
 
         doc_ref = db.collection('chat_logs').document()  # Auto-generate document ID
         doc_ref.set({
@@ -88,12 +89,25 @@ async def chat_endpoint(request: ChatRequest):
             'model_response': current,
             'timestamp': datetime.now().isoformat()
         })
+
+        datatable = db.collection('transaction_info').document()
+        for jsonstr in jsonstrs:
+            datatable.set({
+                'user_id': jsonstr['user_id'],
+                'amount': jsonstr['amount'],
+                'credit_or_debit': jsonstr['credit_or_debit'],
+                'category': jsonstr['category'],
+                'note': jsonstr['note'],
+                'timestamp': datetime.now().isoformat(),
+                'intent': jsonstr['intent']
+        })
         
-        return jsonstr  # Send the parsed JSON as the API response
+        return jsonstrs  # Send the parsed JSON as the API response
     
     except Exception as e:
         # In case of any errors, raise an HTTP 500 error with the exception details
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # Define the request model using Pydantic
 class ChatRequest(BaseModel):

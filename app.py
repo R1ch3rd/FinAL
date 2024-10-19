@@ -158,7 +158,7 @@ async def analyze_sentiment(request: SentimentRequest):
     
     positive_count = sentiments.count('positive')
     negative_count = sentiments.count('negative')
-    average_sentiment = 'positive' if positive_count > negative_count else 'negative'
+    average_sentiment = 'Positive' if positive_count > negative_count else 'Negative'
 
     # Prepare the result to save to Firestore
     analysis_result = {

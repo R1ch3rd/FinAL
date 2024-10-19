@@ -93,11 +93,12 @@ const StockAnalysisPage = () => {
 
         {/* Display either the sentiment or the error message */}
         <p className="text-xl mt-4">
-          Sentiment Analysis:
+          Sentiment Analysis:&nbsp;
           {error ? (
             <span className="text-red-400">{error}</span>
           ) : (
-            <span className="text-green-400"> {sentiment || 'Loading...'}</span>
+            <span className={sentiment === 'Negative' ? 'text-red-400' : 'text-green-400'}>
+      {sentiment || 'Loading...'}</span>
           )}
         </p>
       </div>
@@ -115,7 +116,7 @@ const StockAnalysisPage = () => {
         </ResponsiveContainer>
       </div>
 
-      <div className="bg-gray-800 p-6 rounded shadow-md mt-6">
+      {/* <div className="bg-gray-800 p-6 rounded shadow-md mt-6">
         <h3 className="text-2xl mb-4">Stock Price Chart</h3>
         <ResponsiveContainer width="100%" height={400}>
           <LineChart data={stockData}>
@@ -126,7 +127,7 @@ const StockAnalysisPage = () => {
             <Line type="monotone" dataKey="price" stroke="#82ca9d" strokeWidth={2} />
           </LineChart>
         </ResponsiveContainer>
-      </div>
+      </div> */}
     </div>
   );
 };

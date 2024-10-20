@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { collection, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
-import { db } from 'C:/Users/usaru/Desktop/ADL/FinAL/Client/firebase'; // Import your Firebase config
+import { db } from '../../firebase'; // Import your Firebase config
 import { PieChart, Pie, Tooltip, Cell, ResponsiveContainer, Legend } from 'recharts';
 import axios from 'axios'; // Ensure axios is installed
 

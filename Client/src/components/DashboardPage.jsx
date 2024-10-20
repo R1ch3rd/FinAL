@@ -1,18 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from 'C:/Users/usaru/Desktop/ADL/FinAL/Client/firebase'; // Import your Firebase config
 import { PieChart, Pie, Tooltip, Cell, ResponsiveContainer, Legend } from 'recharts';
+import axios from 'axios'; // Ensure axios is installed
 
 const DashboardPage = () => {
   const [categoryExpenses, setCategoryExpenses] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [error, setError] = useState(null);
 
-  // Fetch transaction data from Firestore
+  // Stock portfolio state
+  const [stocks, setStocks] = useState([]); // Array of stocks
+  const [symbol, setSymbol] = useState('');
+  const [amountSpent, setAmountSpent] = useState('');
+  const [purchasePrice, setPurchasePrice] = useState('');
+  const [message, setMessage] = useState('');
+
+  // Fetch transaction data and stock portfolio from Firestore
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, 'transaction_info'));
-        const data = querySnapshot.docs.map(doc => doc.data());
+        const transactionSnapshot = await getDocs(collection(db, 'transaction_info'));
+        const data = transactionSnapshot.docs.map(doc => doc.data());
 
         // Group expenses by category and sum the amounts
         const expensesByCategory = data.reduce((acc, curr) => {
@@ -32,14 +42,79 @@ const DashboardPage = () => {
         }));
 
         setCategoryExpenses(formattedData);
+        setTransactions(data); // Store all transactions for later use
+
+        // Fetch stock portfolio from Firestore
+        const stockSnapshot = await getDocs(collection(db, 'stocks'));
+        const stockData = stockSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setStocks(stockData); // Set the stocks from Firestore
+
       } catch (err) {
-        console.error("Error fetching transactions: ", err);
-        setError('Failed to fetch transaction data');
+        console.error("Error fetching transactions or stocks: ", err);
+        setError('Failed to fetch data');
       }
     };
 
     fetchData();
   }, []);
+
+  const handleCategoryClick = (data, index) => {
+    const category = data.name; // Get the clicked category name
+    const filteredTransactions = transactions.filter(transaction => transaction.category === category);
+    setSelectedCategory({ category, transactions: filteredTransactions });
+  };
+
+  const handleAddStock = async (e) => {
+    e.preventDefault(); // Prevent form submission
+
+    try {
+      const response = await axios.get(`http://127.0.0.1:8000/stock/${symbol}`); // Adjust URL if needed
+      const prices = response.data;
+      const lastPrice = Object.values(prices).pop(); // Get the latest price
+
+      const currentValue = lastPrice * (amountSpent / purchasePrice); // Calculate current value based on amount spent
+      const gain = ((lastPrice - purchasePrice) / purchasePrice) * 100; // Calculate gain percentage
+
+      const newStock = {
+        symbol,
+        amountSpent: parseFloat(amountSpent), // Ensure this is a number
+        purchasePrice: parseFloat(purchasePrice), // Ensure this is a number
+        currentValue,
+        gain,
+      };
+
+      // Save the new stock to Firestore
+      const docRef = await addDoc(collection(db, 'stocks'), newStock);
+      setStocks(prevStocks => [...prevStocks, { id: docRef.id, ...newStock }]); // Update local state with Firestore id
+      setMessage(`Stock ${symbol} added successfully!`);
+
+      // Reset input fields
+      setSymbol('');
+      setAmountSpent('');
+      setPurchasePrice('');
+    } catch (err) {
+      console.error("Error fetching stock data: ", err);
+      setMessage('Failed to fetch stock data');
+    }
+  };
+
+  const handleDeleteStock = async (id) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this stock?");
+
+    if (confirmDelete) {
+      try {
+        // Delete stock from Firestore
+        await deleteDoc(doc(db, 'stocks', id));
+
+        // Update local state to remove the deleted stock
+        setStocks(prevStocks => prevStocks.filter(stock => stock.id !== id));
+        setMessage('Stock deleted successfully!');
+      } catch (err) {
+        console.error("Error deleting stock: ", err);
+        setMessage('Failed to delete stock');
+      }
+    }
+  };
 
   const COLORS = ['#FF8042', '#00C49F', '#FFBB28', '#0088FE', '#FF4560'];
 
@@ -52,24 +127,93 @@ const DashboardPage = () => {
           {error ? (
             <p className="text-red-400">{error}</p>
           ) : categoryExpenses.length > 0 ? (
-            categoryExpenses.map((category, index) => (
-              <div key={index}>
-                <p>Category: <span className="text-yellow-400">{category.name}</span></p>
-                <p>Total: <span className="text-yellow-400">${category.value.toFixed(2)}</span></p>
-              </div>
-            ))
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr>
+                  <th className="border-b border-gray-600 p-2">Category</th>
+                  <th className="border-b border-gray-600 p-2">Total Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {categoryExpenses.map((category, index) => (
+                  <tr key={index} className="hover:bg-gray-700">
+                    <td className="border-b border-gray-600 p-2 text-yellow-400">{category.name}</td>
+                    <td className="border-b border-gray-600 p-2">${category.value.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           ) : (
             <p className="text-yellow-400">Loading...</p>
           )}
         </div>
         <div className="bg-gray-800 p-6 rounded shadow-md">
           <h3 className="text-2xl font-bold mb-4">Stock Portfolio</h3>
-          <p>Value: <span className="text-green-400">$532.34</span></p>
-          <p>Gains: <span className="text-green-400">+2.4%</span></p>
+          <form onSubmit={handleAddStock} className="mb-4">
+            <input
+              type="text"
+              placeholder="Stock Symbol"
+              value={symbol}
+              onChange={(e) => setSymbol(e.target.value)}
+              className="p-2 rounded border border-gray-600 bg-gray-700 mb-2 w-full"
+              required
+            />
+            <input
+              type="number"
+              placeholder="Amount Spent"
+              value={amountSpent}
+              onChange={(e) => setAmountSpent(e.target.value)}
+              className="p-2 rounded border border-gray-600 bg-gray-700 mb-2 w-full"
+              required
+            />
+            <input
+              type="number"
+              placeholder="Purchase Price"
+              value={purchasePrice}
+              onChange={(e) => setPurchasePrice(e.target.value)}
+              className="p-2 rounded border border-gray-600 bg-gray-700 mb-4 w-full"
+              required
+            />
+            <button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+              Add Stock
+            </button>
+          </form>
+          {message && <p className="text-green-400">{message}</p>}
+          <table className="w-full text-left border-collapse mt-4">
+            <thead>
+              <tr>
+                <th className="border-b border-gray-600 p-2">Symbol</th>
+                <th className="border-b border-gray-600 p-2">Amount Spent</th>
+                <th className="border-b border-gray-600 p-2">Purchase Price</th>
+                <th className="border-b border-gray-600 p-2">Current Value</th>
+                <th className="border-b border-gray-600 p-2">Gains (%)</th>
+                <th className="border-b border-gray-600 p-2">Actions</th> {/* Added Actions column */}
+              </tr>
+            </thead>
+            <tbody>
+              {stocks.map((stock) => (
+                <tr key={stock.id} className="hover:bg-gray-700">
+                  <td className="border-b border-gray-600 p-2 text-yellow-400">{stock.symbol}</td>
+                  <td className="border-b border-gray-600 p-2">${stock.amountSpent.toFixed(2)}</td>
+                  <td className="border-b border-gray-600 p-2">${stock.purchasePrice.toFixed(2)}</td>
+                  <td className="border-b border-gray-600 p-2">${stock.currentValue.toFixed(2)}</td>
+                  <td className="border-b border-gray-600 p-2">{stock.gain.toFixed(2)}%</td>
+                  <td className="border-b border-gray-600 p-2">
+                    <button
+                      onClick={() => handleDeleteStock(stock.id)} // Call delete function
+                      className="text-red-500 hover:text-red-600"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
-      <div className="mt-8 bg-gray-800 p-6 rounded shadow-md">
-        <h3 className="text-2xl font-bold mb-4">Expenses Breakdown</h3>
+      <div className="bg-gray-800 p-6 rounded shadow-md mt-6">
+        <h3 className="text-2xl font-bold mb-4">Expense Distribution</h3>
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>
             <Pie
@@ -78,7 +222,7 @@ const DashboardPage = () => {
               nameKey="name"
               cx="50%"
               cy="50%"
-              outerRadius={100}
+              outerRadius={80}
               fill="#8884d8"
               label
             >
@@ -87,7 +231,7 @@ const DashboardPage = () => {
               ))}
             </Pie>
             <Tooltip />
-            <Legend verticalAlign="bottom" height={36} /> {/* Add the Legend component */}
+            <Legend />
           </PieChart>
         </ResponsiveContainer>
       </div>

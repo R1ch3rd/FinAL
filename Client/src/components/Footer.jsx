@@ -8,7 +8,7 @@ const Footer = () => {
     <div className="flex space-x-4">
       <a href="/terms" className="hover:text-white">Terms</a>
       <a href="/privacy" className="hover:text-white">Privacy</a>
-      <a href="/contact" className="hover:text-white">Contact Us</a>
+      <a href="https://github.com/R1ch3rd/FinAL" className="hover:text-white">Contact Us</a>
     </div>
   </div>
 </footer>

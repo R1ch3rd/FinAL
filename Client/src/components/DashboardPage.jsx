@@ -225,6 +225,7 @@ const DashboardPage = () => {
               outerRadius={80}
               fill="#8884d8"
               label
+              onClick={handleCategoryClick} // Add this line to handle clicks
             >
               {categoryExpenses.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -235,6 +236,43 @@ const DashboardPage = () => {
           </PieChart>
         </ResponsiveContainer>
       </div>
+      {/* Display Transactions Table if a category is selected */}
+      {selectedCategory && (
+        <div className="mt-8 bg-gray-800 p-6 rounded shadow-md">
+          <h3 className="text-2xl font-bold mb-4">Transactions for <span className="text-yellow-400">{selectedCategory.category}</span></h3>
+          {selectedCategory.transactions.length > 0 ? (
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr>
+                  <th className="border-b border-gray-600 p-2">Date & Time</th>
+                  <th className="border-b border-gray-600 p-2">Amount</th>
+                  <th className="border-b border-gray-600 p-2">Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedCategory.transactions.map((transaction, index) => (
+                  <tr key={index} className="hover:bg-gray-700">
+                    <td className="border-b border-gray-600 p-2">
+                      {new Date(transaction.timestamp).toLocaleString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true // Set to false for 24-hour format
+                      })}
+                    </td>
+                    <td className="border-b border-gray-600 p-2">${parseFloat(transaction.amount).toFixed(2)}</td>
+                    <td className="border-b border-gray-600 p-2">{transaction.note}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p className="text-yellow-400">No transactions found.</p>
+          )}
+        </div>
+      )}
     </div>
   );
 };

@@ -57,6 +57,9 @@ const DashboardPage = () => {
 
     fetchData();
   }, []);
+  const renderCustomizedLabel = ({ name, value, percent }) => {
+    return `${name}: ${(percent * 100).toFixed(1)}%`; // Format percentage with one decimal place
+  };
 
   const handleCategoryClick = (data, index) => {
     const category = data.name; // Get the clicked category name
@@ -148,7 +151,7 @@ const DashboardPage = () => {
           )}
         </div>
         <div className="bg-gray-800 p-6 rounded shadow-md">
-          <h3 className="text-2xl font-bold mb-4">Stock Portfolio</h3>
+          <h3 className="text-2xl font-bold mb-4 ">Stock Portfolio</h3>
           <form onSubmit={handleAddStock} className="mb-4">
             <input
               type="text"
@@ -212,8 +215,9 @@ const DashboardPage = () => {
           </table>
         </div>
       </div>
-      <div className="bg-gray-800 p-6 rounded shadow-md mt-6">
-        <h3 className="text-2xl font-bold mb-4">Expense Distribution</h3>
+      <div className="bg-gray-800 p-6 rounded shadow-md mt-6 w-full">
+        <h3 className="text-2xl font-bold mb-4 text-center">Expense Distribution</h3>
+        <div style={{ padding: '20px' }}>
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>
             <Pie
@@ -222,9 +226,9 @@ const DashboardPage = () => {
               nameKey="name"
               cx="50%"
               cy="50%"
-              outerRadius={80}
+              outerRadius={100}
               fill="#8884d8"
-              label
+              label={renderCustomizedLabel} 
               onClick={handleCategoryClick} // Add this line to handle clicks
             >
               {categoryExpenses.map((entry, index) => (
@@ -234,7 +238,7 @@ const DashboardPage = () => {
             <Tooltip />
             <Legend />
           </PieChart>
-        </ResponsiveContainer>
+        </ResponsiveContainer></div>
       </div>
       {/* Display Transactions Table if a category is selected */}
       {selectedCategory && (

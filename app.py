@@ -34,7 +34,7 @@ sentiment_model_name = 'nlptown/bert-base-multilingual-uncased-sentiment'
 sentiment_tokenizer = BertTokenizer.from_pretrained(sentiment_model_name)
 sentiment_model = BertForSequenceClassification.from_pretrained(sentiment_model_name)
 import finnhub
-finnhub_client = finnhub.Client(api_key=os.environ.get("MARKET_KEY"))
+finnhub_client = finnhub.Client(api_key=os.environ.get("FINNHUB_KEY"))
 
 # Initialize FastAPI app
 app = FastAPI()

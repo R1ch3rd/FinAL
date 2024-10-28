@@ -10,7 +10,7 @@ const LandingPage = () => {
     Manage Your Finances with Ease
   </h1>
   <p className="text-gray-300 mb-8 max-w-2xl text-center">
-    FinAL helps you track your monthly expenses and analyze stock trends using AI and sentiment analysis.
+    FinAI helps you track your monthly expenses and analyze stock trends using AI and sentiment analysis.
   </p>
   <div className="flex space-x-4">
     <Link to="/dashboard" className="bg-gradient-to-b from-green-500 via-purple-500 to-blue-500 hover:bg-blue-700 text-white px-6 py-3 rounded transition duration-300 ease-in-out transform hover:scale-105">

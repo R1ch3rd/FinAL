@@ -89,7 +89,6 @@ async def chat_endpoint(request: ChatRequest):
             'model_response': current,
             'timestamp': datetime.now().isoformat()
         })
-
         datatable = db.collection('transaction_info').document()
         for jsonstr in jsonstrs:
             datatable.set({
@@ -101,9 +100,7 @@ async def chat_endpoint(request: ChatRequest):
                 'timestamp': datetime.now().isoformat(),
                 'intent': jsonstr['intent']
         })
-        
         return jsonstrs  # Send the parsed JSON as the API response
-    
     except Exception as e:
         # In case of any errors, raise an HTTP 500 error with the exception details
         raise HTTPException(status_code=500, detail=str(e))

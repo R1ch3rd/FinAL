@@ -73,58 +73,58 @@ const StockAnalysisPage = () => {
     <div className="bg-gray-900 min-h-screen text-white p-4">
       <h2 className="text-4xl font-bold mb-6">Stock Analysis for {symbol}</h2>
       <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-  {/* LSTM Predictions */}
-  <div className="mb-8">
-    <h2 className="text-2xl font-bold text-white mb-4">LSTM Predictions for the Next 7 Days</h2>
-    {error ? (
-      <p className="text-red-400 text-lg">{error}</p>
-    ) : (
-      <ul className="space-y-2">
-        {predictions.length > 0 ? (
-          predictions.map((pred, index) => (
-            <li key={index} className="flex items-center text-lg text-green-400">
-              <span className="mr-2 text-gray-300">Day {index + 1}:</span> 
-              <span className="font-semibold">${pred}</span>
-            </li>
-          ))
-        ) : (
-          <li className="text-yellow-400 text-lg">Loading predictions...</li>
-        )}
-      </ul>
-    )}
-  </div>
+        {/* LSTM Predictions */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-white mb-4">Predictions for the Next 7 Days</h2>
+          {error ? (
+            <p className="text-red-400 text-lg">{error}</p>
+          ) : (
+            <ul className="space-y-2">
+              {predictions.length > 0 ? (
+                predictions.map((pred, index) => (
+                  <li key={index} className="flex items-center text-lg text-green-400">
+                    <span className="mr-2 text-gray-300">Day {index + 1}:</span>
+                    <span className="font-semibold">${pred}</span>
+                  </li>
+                ))
+              ) : (
+                <li className="text-yellow-400 text-lg">Loading predictions...</li>
+              )}
+            </ul>
+          )}
+        </div>
 
-  {/* Sentiment Analysis */}
-  <div className="border-t border-gray-600 pt-6">
-    <h2 className="text-2xl font-bold text-white mb-4">Sentiment Analysis</h2>
-    {error ? (
-      <p className="text-red-400 text-lg">{error}</p>
-    ) : (
-      <p className={`text-lg font-semibold ${sentiment === 'Negative' ? 'text-red-400' : 'text-green-400'}`}>
-        {sentiment || 'Loading sentiment...'}
-        {sentiment === 'Positive' ? (
-          <span role="img" aria-label="positive" className="ml-2"></span>
-        ) : sentiment === 'Negative' ? (
-          <span role="img" aria-label="negative" className="ml-2"></span>
-        ) : null}
-      </p>
-    )}
-  </div>
-</div>
+        {/* Sentiment Analysis */}
+        <div className="border-t border-gray-600 pt-6">
+          <h2 className="text-2xl font-bold text-white mb-4">Sentiment Analysis</h2>
+          {error ? (
+            <p className="text-red-400 text-lg">{error}</p>
+          ) : (
+            <p className={`text-lg font-semibold ${sentiment === 'Negative' ? 'text-red-400' : 'text-green-400'}`}>
+              {sentiment || 'Loading sentiment...'}
+              {sentiment === 'Positive' ? (
+                <span role="img" aria-label="positive" className="ml-2"></span>
+              ) : sentiment === 'Negative' ? (
+                <span role="img" aria-label="negative" className="ml-2"></span>
+              ) : null}
+            </p>
+          )}
+        </div>
+      </div>
 
 
-<div className="bg-gray-800 p-6 rounded shadow-md mt-6">
-  <h3 className="text-2xl mb-4 text-white">Stock Price Chart</h3>
-  <ResponsiveContainer width="100%" height={400}>
-    <LineChart data={stockData}>
-      <XAxis dataKey="date" tick={{ fill: '#fff' }} axisLine={{ stroke: '#fff' }} />
-      <YAxis domain={['auto', 'auto']} tick={{ fill: '#fff' }} axisLine={{ stroke: '#fff' }} />
-      <Tooltip />
-      <CartesianGrid stroke="#ccc" />
-      <Line type="monotone" dataKey="price" stroke="#82ca9d" strokeWidth={2} />
-    </LineChart>
-  </ResponsiveContainer>
-</div>
+      <div className="bg-gray-800 p-6 rounded shadow-md mt-6">
+        <h3 className="text-2xl mb-4 text-white">Stock Price Chart</h3>
+        <ResponsiveContainer width="100%" height={400}>
+          <LineChart data={stockData}>
+            <XAxis dataKey="date" tick={{ fill: '#fff' }} axisLine={{ stroke: '#fff' }} />
+            <YAxis domain={['auto', 'auto']} tick={{ fill: '#fff' }} axisLine={{ stroke: '#fff' }} />
+            <Tooltip />
+            <CartesianGrid stroke="#ccc" />
+            <Line type="monotone" dataKey="price" stroke="#82ca9d" strokeWidth={2} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
 
       {/* <div className="bg-gray-800 p-6 rounded shadow-md mt-6">
         <h3 className="text-2xl mb-4">Stock Price Chart</h3>

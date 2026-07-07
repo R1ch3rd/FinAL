@@ -38,21 +38,21 @@ const StockListPage = () => {
   };
 
   return (
-    <div className="bg-gray-900 min-h-screen text-white p-4">
+    <div className="bg-cream min-h-screen text-ink p-4">
       {/* <h2 className="text-3xl mb-4">Stocks List</h2> */}
 
       {/* Search Bar */}
       <form onSubmit={handleSearchSubmit} className="mb-6">
         <input
           type="text"
-          className="p-2 rounded bg-gray-800 text-white w-full"
+          className="p-2 rounded bg-surface text-ink w-full"
           placeholder="Enter stock ticker (e.g., AAPL)"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
         />
         <button
           type="submit"
-          className="mt-2 p-2 bg-green-600 rounded hover:bg-green-500 w-full"
+          className="mt-2 p-2 bg-sage rounded hover:bg-green-500 w-full"
         >
           Search Stock
         </button>
@@ -63,7 +63,7 @@ const StockListPage = () => {
         {stocks.map((stock) => (
           <li key={stock.symbol} className="mb-2">
             <button
-              className="bg-gray-800 hover:bg-gray-700 p-4 rounded w-full text-left"
+              className="bg-surface hover:bg-cream-deep p-4 rounded w-full text-left"
               onClick={() => navigate(`/stock/${stock.symbol}`)}
             >
               {stock.name} ({stock.symbol})
@@ -79,7 +79,7 @@ const StockListPage = () => {
     {favoriteStocks.map((stock) => (
       <div key={stock.symbol} className="w-1/2 p-2">
         <button
-          className="bg-gray-800 hover:bg-gray-700 p-6 rounded text-center w-full"
+          className="bg-surface hover:bg-cream-deep p-6 rounded text-center w-full"
           onClick={() => navigate(`/stock/${stock.symbol}`)}
         >
           {stock.name} ({stock.symbol})

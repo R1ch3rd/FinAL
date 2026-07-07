@@ -16,7 +16,7 @@ function App() {
   return (
     <AuthProvider>
     <Router>
-      <div className="bg-gray-900 min-h-screen">
+      <div className="bg-cream min-h-screen">
         <Navbar />
         <Routes>
           <Route path="/" element={<LandingPage />} />

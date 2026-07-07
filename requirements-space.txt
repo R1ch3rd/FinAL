@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+pydantic
+numpy
+scikit-learn
+yfinance
+finnhub-python
+google-generativeai==0.8.4
+transformers
+firebase-admin
+python-dotenv
+requests
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch

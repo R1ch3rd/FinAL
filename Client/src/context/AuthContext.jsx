@@ -1,9 +1,10 @@
-// AuthContext.jsx
+// AuthContext.jsx — demo authentication.
+// The original app authenticated against Firebase; the public demo
+// accepts any credentials and keeps the session in localStorage.
 import { createContext, useContext, useEffect, useState } from "react";
-import { auth } from "../../firebase"; // Importing auth from firebase.js
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
 
 const AuthContext = createContext();
+const KEY = "final-demo-user";
 
 export function useAuth() {
   return useContext(AuthContext);
@@ -13,22 +14,27 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-    });
-    return unsubscribe;
+    try {
+      const saved = localStorage.getItem(KEY);
+      if (saved) setUser(JSON.parse(saved));
+    } catch {
+      /* ignore */
+    }
   }, []);
 
-  const signUp = (email, password) => {
-    return createUserWithEmailAndPassword(auth, email, password);
+  const login = (email) => {
+    const u = { email, demo: true };
+    localStorage.setItem(KEY, JSON.stringify(u));
+    setUser(u);
+    return Promise.resolve(u);
   };
 
-  const login = (email, password) => {
-    return signInWithEmailAndPassword(auth, email, password);
-  };
+  const signUp = login;
 
   const logout = () => {
-    return signOut(auth);
+    localStorage.removeItem(KEY);
+    setUser(null);
+    return Promise.resolve();
   };
 
   return (

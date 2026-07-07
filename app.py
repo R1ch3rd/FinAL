@@ -21,11 +21,20 @@ from fastapi.middleware.cors import CORSMiddleware
 
 # Load the environment variables from .env file
 load_dotenv()
-# Use the application default credentials.
-cred = credentials.Certificate('finai.json')
 
-firebase_admin.initialize_app(cred)
-db = firestore.client()
+# Firebase persistence is optional: with no service-account file the API
+# runs in demo mode and simply skips Firestore writes.
+db = None
+try:
+    if os.path.exists('finai.json'):
+        cred = credentials.Certificate('finai.json')
+        firebase_admin.initialize_app(cred)
+        db = firestore.client()
+        print("Firebase connected")
+    else:
+        print("finai.json not found; running without persistence")
+except Exception as e:
+    print(f"Firebase init failed ({e}); running without persistence")
 
 genai.configure(api_key=os.environ.get("GEMINI_KEY"))
 
@@ -58,7 +67,7 @@ generation_config = {
 }
 
 model = genai.GenerativeModel(
-  model_name="gemini-1.5-flash",
+  model_name="gemini-flash-latest",
   generation_config=generation_config,
   system_instruction="You are an AI assistant that processes financial statements. Given a user input text, you need to extract the following information for each transaction mentioned:\n\n    1. Intent: The action or purpose of the user's statement (e.g., \"AddExpense\", \"ViewExpenses\", \"CheckBalance\").\n    2. Amount: The amount of money mentioned in the transaction (e.g., \"$50\", \"200\").\n    3. Category: The category of the expense (e.g., \"Groceries\", \"Electronics\", \"Rent\").\n    4. Note: The original user input text.\n    5. Timestamp: The current date and time in ISO 8601 format.\n\n    For each transaction in the input text, respond with a JSON object. If multiple transactions are mentioned, return a list of JSON objects. Here is an example JSON structure:\n\n    Example Inputs and Expected Outputs:\n\n    1. Input: \"I spent $50 on groceries and $20 on coffee.\"\n       - Output: [\n           {{\n               \"user_id\": 1,\n               \"amount\": \"50\",\n               \"credit_or_debit\": \"Debit\",\n               \"category\": \"Groceries\",\n               \"note\": \"I spent $50 on groceries.\",\n               \"timestamp\": \"2024-08-27T03:18:41Z\",\n               \"intent\": \"AddExpense\"\n           }},\n           {{\n               \"user_id\": 1,\n               \"amount\": \"20\",\n               \"credit_or_debit\": \"Debit\",\n               \"category\": \"Coffee\",\n               \"note\": \"I spent $20 on coffee.\",\n               \"timestamp\": \"2024-08-27T03:18:41Z\",\n               \"intent\": \"AddExpense\"\n           }}\n       ]\n\n    2. Input: \"I spent 50 on a pen and 20 on noodles.\"\n       - Output: [\n           {{\n               \"user_id\": 1,\n               \"amount\": \"50\",\n               \"credit_or_debit\": \"Debit\",\n               \"category\": \"Stationery\",\n               \"note\": \"I spent 50 on a pen.\",\n               \"timestamp\": \"2024-08-27T03:18:41Z\",\n               \"intent\": \"AddExpense\"\n           }},\n           {{\n               \"user_id\": 1,\n               \"amount\": \"20\",\n               \"credit_or_debit\": \"Debit\",\n               \"category\": \"Food\",\n               \"note\": \"I spent 20 on noodles.\",\n               \"timestamp\": \"2024-08-27T03:18:41Z\",\n               \"intent\": \"AddExpense\"\n           }}\n       ]\n\n    3. Input: \"Show me my expenses for this month.\"\n       - Output: {\n           \"user_id\": 1,\n           \"amount\": null,\n           \"credit_or_debit\": null,\n           \"category\": null,\n           \"note\": \"Show me my expenses for this month.\",\n           \"timestamp\": \"2024-08-27T03:18:41Z\",\n           \"intent\": \"ViewExpenses\"\n       }\n\n       The response must contain text of that format only.",
 )
@@ -80,26 +89,33 @@ async def chat_endpoint(request: ChatRequest):
             if chunk.text:
                 current += chunk.text
 
-        # Attempt to parse the final JSON output
-        jsonstrs = json.loads(response.text)  # Modify this as needed based on the structure of `current`.
+        # Attempt to parse the final JSON output (strip ```json fences if present)
+        raw = response.text.strip()
+        if raw.startswith('```'):
+            raw = raw.split('\n', 1)[1] if '\n' in raw else raw
+            raw = raw.rsplit('```', 1)[0].strip()
+        jsonstrs = json.loads(raw)
+        if isinstance(jsonstrs, dict):
+            jsonstrs = [jsonstrs]
 
-        doc_ref = db.collection('chat_logs').document()  # Auto-generate document ID
-        doc_ref.set({
-            'user_message': user_message,
-            'model_response': current,
-            'timestamp': datetime.now().isoformat()
-        })
-        datatable = db.collection('transaction_info').document()
-        for jsonstr in jsonstrs:
-            datatable.set({
-                'user_id': jsonstr['user_id'],
-                'amount': jsonstr['amount'],
-                'credit_or_debit': jsonstr['credit_or_debit'],
-                'category': jsonstr['category'],
-                'note': jsonstr['note'],
-                'timestamp': datetime.now().isoformat(),
-                'intent': jsonstr['intent']
-        })
+        if db is not None:
+            doc_ref = db.collection('chat_logs').document()  # Auto-generate document ID
+            doc_ref.set({
+                'user_message': user_message,
+                'model_response': current,
+                'timestamp': datetime.now().isoformat()
+            })
+            datatable = db.collection('transaction_info').document()
+            for jsonstr in jsonstrs:
+                datatable.set({
+                    'user_id': jsonstr['user_id'],
+                    'amount': jsonstr['amount'],
+                    'credit_or_debit': jsonstr['credit_or_debit'],
+                    'category': jsonstr['category'],
+                    'note': jsonstr['note'],
+                    'timestamp': datetime.now().isoformat(),
+                    'intent': jsonstr['intent']
+            })
         return jsonstrs  # Send the parsed JSON as the API response
     except Exception as e:
         # In case of any errors, raise an HTTP 500 error with the exception details
@@ -127,6 +143,7 @@ def predict_sentiment(text):
     return 'positive' if predicted_class > 2 else 'negative'
 
 def get_news_headlines(stock_symbol):
+    headlines = []
     try:
         to_date = datetime.today().strftime('%Y-%m-%d')
         from_date = (datetime.now() - timedelta(days=120)).strftime("%Y-%m-%d")
@@ -180,8 +197,9 @@ async def analyze_sentiment(request: SentimentRequest):
         'timestamp': datetime.now().isoformat()
     }
 
-    # Save the analysis result to Firestore
-    db.collection('sentiment_analysis').document(stock_symbol).set(analysis_result)
+    # Save the analysis result to Firestore (skipped in demo mode)
+    if db is not None:
+        db.collection('sentiment_analysis').document(stock_symbol).set(analysis_result)
 
     return analysis_result  # Return the summary of sentiment analysis
 
@@ -225,8 +243,12 @@ scaler = MinMaxScaler(feature_range=(-1, 1))
 
 # Function to get the latest stock data
 def get_stock_data(ticker, seq_length):
-    stock_data = yf.download(ticker, period='1y')  # Adjust this as necessary
-    closing_prices = stock_data['Close'].values.reshape(-1, 1)
+    # yf.download() returns empty frames in some hosted environments;
+    # Ticker().history() is reliable (and matches the /stock endpoint)
+    history = yf.Ticker(ticker).history(period='1y')
+    if history.empty:
+        raise ValueError(f"No price data returned for {ticker}")
+    closing_prices = history['Close'].values.reshape(-1, 1)
     scaled_data = scaler.fit_transform(closing_prices)
     last_sequence = scaled_data[-seq_length:]
     return torch.FloatTensor(last_sequence).unsqueeze(0).to(device)
@@ -263,6 +285,19 @@ async def predict(request: StockRequest):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/health")
+def health_check():
+    return {
+        "status": "ok",
+        "models": {
+            "lstm_forecast": "loaded",
+            "sentiment": "loaded",
+            "gemini": "configured" if os.environ.get("GEMINI_KEY") else "not configured",
+            "finnhub": "configured" if os.environ.get("MARKET_KEY") else "not configured",
+            "firestore": "connected" if db is not None else "demo mode (no persistence)",
+        },
+    }
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

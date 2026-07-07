@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_BASE } from '../lib/api';
 import { useParams } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from 'recharts';
 import axios from 'axios';
@@ -13,7 +14,7 @@ const StockAnalysisPage = () => {
   useEffect(() => {
     const fetchSentiment = async () => {
       try {
-        const response = await fetch('http://127.0.0.1:8000/analyze-sentiment', {
+        const response = await fetch(`${API_BASE}/analyze-sentiment`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -33,7 +34,7 @@ const StockAnalysisPage = () => {
 
     const fetchPrediction = async () => {
       try {
-        const response = await fetch('http://127.0.0.1:8000/predict', {
+        const response = await fetch(`${API_BASE}/predict`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -58,7 +59,7 @@ const StockAnalysisPage = () => {
 
   // Fetch stock data from FastAPI backend
   useEffect(() => {
-    axios.get(`http://localhost:8000/stock/${symbol}`)
+    axios.get(`${API_BASE}/stock/${symbol}`)
       .then(response => {
         const formattedData = Object.keys(response.data).map(date => ({
           date,
@@ -70,20 +71,20 @@ const StockAnalysisPage = () => {
   }, [symbol]);
 
   return (
-    <div className="bg-gray-900 min-h-screen text-white p-4">
+    <div className="bg-cream min-h-screen text-ink p-4">
       <h2 className="text-4xl font-bold mb-6">Stock Analysis for {symbol}</h2>
-      <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+      <div className="bg-surface p-6 rounded-lg shadow-lg">
         {/* LSTM Predictions */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-white mb-4">Predictions for the Next 7 Days</h2>
+          <h2 className="text-2xl font-bold text-ink mb-4">Predictions for the Next 7 Days</h2>
           {error ? (
-            <p className="text-red-400 text-lg">{error}</p>
+            <p className="text-blush text-lg">{error}</p>
           ) : (
             <ul className="space-y-2">
               {predictions.length > 0 ? (
                 predictions.map((pred, index) => (
-                  <li key={index} className="flex items-center text-lg text-green-400">
-                    <span className="mr-2 text-gray-300">Day {index + 1}:</span>
+                  <li key={index} className="flex items-center text-lg text-sage">
+                    <span className="mr-2 text-ink-muted">Day {index + 1}:</span>
                     <span className="font-semibold">${pred}</span>
                   </li>
                 ))
@@ -95,12 +96,12 @@ const StockAnalysisPage = () => {
         </div>
 
         {/* Sentiment Analysis */}
-        <div className="border-t border-gray-600 pt-6">
-          <h2 className="text-2xl font-bold text-white mb-4">Sentiment Analysis</h2>
+        <div className="border-t border-surface-border pt-6">
+          <h2 className="text-2xl font-bold text-ink mb-4">Sentiment Analysis</h2>
           {error ? (
-            <p className="text-red-400 text-lg">{error}</p>
+            <p className="text-blush text-lg">{error}</p>
           ) : (
-            <p className={`text-lg font-semibold ${sentiment === 'Negative' ? 'text-red-400' : 'text-green-400'}`}>
+            <p className={`text-lg font-semibold ${sentiment === 'Negative' ? 'text-blush' : 'text-sage'}`}>
               {sentiment || 'Loading sentiment...'}
               {sentiment === 'Positive' ? (
                 <span role="img" aria-label="positive" className="ml-2"></span>
@@ -113,8 +114,8 @@ const StockAnalysisPage = () => {
       </div>
 
 
-      <div className="bg-gray-800 p-6 rounded shadow-md mt-6">
-        <h3 className="text-2xl mb-4 text-white">Stock Price Chart</h3>
+      <div className="bg-surface p-6 rounded shadow-md mt-6">
+        <h3 className="text-2xl mb-4 text-ink">Stock Price Chart</h3>
         <ResponsiveContainer width="100%" height={400}>
           <LineChart data={stockData}>
             <XAxis dataKey="date" tick={{ fill: '#fff' }} axisLine={{ stroke: '#fff' }} />
@@ -126,7 +127,7 @@ const StockAnalysisPage = () => {
         </ResponsiveContainer>
       </div>
 
-      {/* <div className="bg-gray-800 p-6 rounded shadow-md mt-6">
+      {/* <div className="bg-surface p-6 rounded shadow-md mt-6">
         <h3 className="text-2xl mb-4">Stock Price Chart</h3>
         <ResponsiveContainer width="100%" height={400}>
           <LineChart data={stockData}>
